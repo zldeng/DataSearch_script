@@ -279,7 +279,7 @@ def push_train_data(source_db_name,source_sql_table_name,dest_db_name,train_info
 			trainInfo_sql = "replace into " + train_info_sql_table + " (train_info_key,train_no,train_type,train_corp,dept_id,dest_id,dept_time,dest_time,cost,daydiff) values "
 
 			values = ''
-			info_error = Flase
+			info_error = False
 
 			for i in range(0,len(train_no_vec)):
 				trainNo = train_no_vec[i]
