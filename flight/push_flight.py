@@ -218,6 +218,15 @@ def push_flight_data(source_db_name,source_sql_table_name,dest_db_name,flight_in
 				flight_corp = flight_day_info_fuse_dic[flight_day_info_fuse_key]['flight_corp']
 				daydiff = flight_day_info_fuse_dic[flight_day_info_fuse_key]['daydiff']
 			#using fused data done!
+			
+			if 'NULL' in stop_id:
+				print 'filter\tstop_id_error_' + source
+				continue
+
+			if 'NULL' in stop_time:
+				print 'filter\tstop_time_error_' + source
+				continue
+
 
 			return_rule = data[20].encode('utf-8').strip().replace("'",'"')
 			stop = data[21]
@@ -249,8 +258,6 @@ def push_flight_data(source_db_name,source_sql_table_name,dest_db_name,flight_in
 
 			flight_redis_value = str(price) + '\t' + str(tax) + '\t' + str(surcharge) + '\t' + currency + '\t' + flight_ticket_md5
 			
-			if flight_redis_value not in flight_redis[flight_redis_key]:
-				flight_redis[flight_redis_key].append(flight_redis_value)
 
 			ticket_stop_id_vec = stop_id.strip().split('|')
 			ticket_stop_id = 'NULL'
@@ -310,6 +317,8 @@ def push_flight_data(source_db_name,source_sql_table_name,dest_db_name,flight_in
 			flightInfo_sql = "replace into " + flight_info_sql_table + " (flight_info_key,flight_no,plane_type,flight_corp,dept_id,dest_id,dept_time,dest_time,cost,daydiff) values "
 
 			values = ''
+			
+			info_error = False
 
 			for i in range(0,len(flight_no_vec)):
 				flightNo = flight_no_vec[i]
@@ -320,8 +329,9 @@ def push_flight_data(source_db_name,source_sql_table_name,dest_db_name,flight_in
 				
 				stopId_list = stopId.strip().split('_')
 				if len(stopId_list) != 2:
+					info_error = True
 					print 'filter\tstop_id_error_source_' + source
-					continue
+					break
 					
 				deptId = stopId_list[0].strip()
 				destId = stopId_list[1].strip()
@@ -331,7 +341,8 @@ def push_flight_data(source_db_name,source_sql_table_name,dest_db_name,flight_in
 				stopTime_list = stopTime.strip().split('_')
 				if 2 != len(stopTime_list):
 					print 'filter\tstop_time_error_' + source
-					continue
+					info_error = True
+					break
 
 				deptTime = stopTime_list[0].strip()
 				destTime = stopTime_list[1].strip()
@@ -339,7 +350,8 @@ def push_flight_data(source_db_name,source_sql_table_name,dest_db_name,flight_in
 				deptTime_list = deptTime.strip().split(' ')
 				if len(deptTime_list) != 2:
 					print 'filter\tstop_time_error_' + source
-					continue
+					info_error = True
+					break
 
 				deptDay = deptTime_list[0]
 				deptTime = deptTime.replace(' ','_')
@@ -365,7 +377,7 @@ def push_flight_data(source_db_name,source_sql_table_name,dest_db_name,flight_in
 					else:
 						values += " , " + tmpValue
 			
-			if values != '':
+			if not info_error and values != '':
 				try:
 					flightInfo_sql += values + ";"
 					#print  'flightInfo_sql: ' + flightInfo_sql
@@ -376,6 +388,9 @@ def push_flight_data(source_db_name,source_sql_table_name,dest_db_name,flight_in
 					_ERROR('exceute tran info sql fail',[str(e)])
 					continue
 
+
+			if not info_error and flight_redis_value not in flight_redis[flight_redis_key]:
+				flight_redis[flight_redis_key].append(flight_redis_value)
 
 	conn.commit()
 	cursor.close()

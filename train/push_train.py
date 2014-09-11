@@ -149,7 +149,7 @@ def push_train_data(source_db_name,source_sql_table_name,dest_db_name,train_info
 			
 			#!!!!!may change here
 			if len(data) != 23:
-				print 'filter\tdata_len_error'
+				print 'filter\tdata_size_error'
 				#_INFO('push train data',['data len error! data = '+str(data)])
 				continue
 			
@@ -192,6 +192,14 @@ def push_train_data(source_db_name,source_sql_table_name,dest_db_name,train_info
 			stop = data[21]
 			up_time = str(data[22]).strip()
 
+			if 'NULL' in stop_id:
+				print 'filter\tstop_id_error_' + source
+				continue
+
+			if 'NULL' in stop_time:
+				print 'filter\tstop_time_error_' + source
+				continue
+			
 			if not (ticket_no.count('_') == train_type.count('_') == train_corp.count('_') \
 					== stop_id.count('|') == stop_time.count('|') == seat_type.count('_') \
 					== real_class.count('_') == daydiff.count('_')):
@@ -210,8 +218,6 @@ def push_train_data(source_db_name,source_sql_table_name,dest_db_name,train_info
 
 			train_redis_value = str(price) + '\t' + str(tax) + '\t' + currency + '\t' + train_ticket_md5
 			
-			if train_redis_value not in train_redis[train_redis_key]:
-				train_redis[train_redis_key].append(train_redis_value)
 
 			ticket_stop_id_vec = stop_id.strip().split('|')
 			ticket_stop_id = ''
@@ -273,6 +279,7 @@ def push_train_data(source_db_name,source_sql_table_name,dest_db_name,train_info
 			trainInfo_sql = "replace into " + train_info_sql_table + " (train_info_key,train_no,train_type,train_corp,dept_id,dest_id,dept_time,dest_time,cost,daydiff) values "
 
 			values = ''
+			info_error = Flase
 
 			for i in range(0,len(train_no_vec)):
 				trainNo = train_no_vec[i]
@@ -283,8 +290,8 @@ def push_train_data(source_db_name,source_sql_table_name,dest_db_name,train_info
 				stopId_list = stopId.strip().split('_')
 				if len(stopId_list) != 2:
 					print 'filter\tstop_id_error_' + source
-					#_INFO('push train data',['Error','stop_id error! stop_id=' + stop_id])
-					continue
+					info_error = True
+					break
 					
 				deptId = stopId_list[0]
 				destId = stopId_list[1]
@@ -294,8 +301,8 @@ def push_train_data(source_db_name,source_sql_table_name,dest_db_name,train_info
 				stopTime_list = stopTime.strip().split('_')
 				if 2 != len(stopTime_list):
 					print 'filter\tstop_time_error_' + source
-					#_INFO('push train data',['stop_time error! stop_time=' + stop_time])
-					continue
+					info_error = True
+					break
 
 				deptTime = stopTime_list[0].strip()
 				destTime = stopTime_list[1].strip()
@@ -303,8 +310,8 @@ def push_train_data(source_db_name,source_sql_table_name,dest_db_name,train_info
 				deptTime_list = deptTime.strip().split(' ')
 				if len(deptTime_list) != 2:
 					print 'filter\tstop_time_error_' + source
-					#_INFO('push train data',['stop_time error! stop_time=' + stop_time])
-					continue
+					info_error = True
+					break
 
 				deptDay = deptTime_list[0]
 				deptTime = deptTime.replace(' ','_')
@@ -332,7 +339,7 @@ def push_train_data(source_db_name,source_sql_table_name,dest_db_name,train_info
 					else:
 						values += " , " + tmpValue
 			
-			if values != '':
+			if not info_error and values != '':
 				try:
 					trainInfo_sql += values + ";"
 					#print  'trainInfo_sql: ' + trainInfo_sql
@@ -343,6 +350,8 @@ def push_train_data(source_db_name,source_sql_table_name,dest_db_name,train_info
 					_ERROR('exceute tran info sql fail',[str(e)])
 					continue
 
+			if not info_error and train_redis_value not in train_redis[train_redis_key]:
+				train_redis[train_redis_key].append(train_redis_value)
 
 	conn.commit()
 	cursor.close()
