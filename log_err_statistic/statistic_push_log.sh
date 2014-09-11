@@ -13,6 +13,7 @@ then
 	cp $flight_log_file $flight_tmp
 
 	grep "filter	" $flight_tmp | awk -F"\t" '{print $2}' | awk -F"\t" '{c[$0]++}END{for(i in c){print i"\t"c[i]}}' > $flight_result
+	
 	python push_data_to_sql.py $flight_table_name $flight_result $lastday
 
 	rm -f $flight_tmp

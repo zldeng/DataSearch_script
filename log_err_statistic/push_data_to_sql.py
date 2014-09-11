@@ -10,7 +10,7 @@ cursor = conn.cursor()
 
 table_name = sys.argv[1].strip()
 
-count = {}
+source_count = {}
 
 inFile = file(sys.argv[2].strip())
 for line in inFile:
@@ -20,26 +20,42 @@ for line in inFile:
 		continue
 
 	item = lineList[0].strip()
-	num = lineList[1].strip()
+	
+	itermList = item.strip().split('_')
 
-	count[item] = num
+	if len(itermList) < 2:
+		continue
+
+	error = '_'.join(itermList[0:-1])
+	source = itermList[-1]
+
+	num = lineList[1].strip()
+	
+	if source not in source_count:
+		source_count[source] = {}
+
+	source_count[source][error] = num
+
+
 
 day = sys.argv[3].strip()
 
-value = " values ('" + day
+for sourceKey in source_count:
+	sql = "replace into " + table_name + " (date, source"
+	value = "('" + day + "','" + sourceKey
 
-sql = "replace into " + table_name + " (date "
+	for errorKey in source_count[sourceKey]:
+		sql += "," + errorKey
 
-for key in count:
-	sql += "," + key
-	value += "','" + count[key]
+		value += "','" + source_count[sourceKey][errorKey]
 
-sql += ") "
-value += "') ;"
+	
+	sql += ") values "
+	value += "')"
 
-sql += value
+	sql += value + ";"
 
-cursor.execute(sql)
+	cursor.execute(sql)
 
 cursor.close()
 conn.close()
