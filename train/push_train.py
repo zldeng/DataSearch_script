@@ -172,7 +172,14 @@ def push_train_data(source_db_name,source_sql_table_name,dest_db_name,train_info
 			source = data[16].encode('utf-8').strip()
 			
 			price = data[11]
-			if price < 0:
+			if abs(price + 10) < 0.1:
+				pattern = 'train_' + dept_id + '_' + dest_id + '_' + dept_day + '_*'
+				rds = redis.Redis(host='127.0.0.1', port=6379, db=0)
+				deleKey = rds.keys(pattern)
+				for key in deleKey:
+					rds.delete(key)
+
+			elif price < 0:
 				print 'filter\tprice_error_' + source
 				#_INFO('push train data',['Warning','price is err! data = ' + str(data)])
 				continue
