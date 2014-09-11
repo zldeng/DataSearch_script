@@ -1,4 +1,4 @@
 DataSearch_script
 =================
 
-put data from mysql to redis
+scripts for putting data from mysql to redis
