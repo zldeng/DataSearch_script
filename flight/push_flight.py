@@ -373,11 +373,14 @@ def push_flight_data(source_db_name,source_sql_table_name,dest_db_name,flight_in
 
 				flight_info_key = flightNo + '_' + deptId + '_' + destId + '_' + deptDay
 
-				getsql = "select * from " + flight_info_sql_table + " where flight_info_key='" + flight_info_key + "';"
+				getsql = "select cost from " + flight_info_sql_table + " where flight_info_key='" + flight_info_key + "';"
 				p = cursor.execute(getsql)
 				tmpData = cursor.fetchall()
 
-				if len(tmpData) == 0:
+				if len(tmpData) > 0:
+					oldCost = tmpData[0][0]
+
+				if len(tmpData) == 0 or oldCost < 0 :
 					cost = durCal(deptTime,destTime,deptId,destId)
 					tmpValue = "('" + flight_info_key + "','" + flightNo + "','" + planeType + "','" + flightCorp \
 							+ "','" + deptId + "','" + destId + "','" + deptTime + "','" + destTime + "','" \

@@ -344,7 +344,10 @@ def push_train_data(source_db_name,source_sql_table_name,dest_db_name,train_info
 
 				tmpData = cursor.fetchall()
 				
-				if len(tmpData) == 0:
+				if len(tmpData) > 0:
+					oldCost = tmpData[0][0]
+				
+				if len(tmpData) == 0 or oldCost < 0:
 					cost = durCal(deptTime,destTime,deptId,destId)
 
 					tmpValue = "('" + train_info_key + "','" + trainNo + "','" + trainType + "','" + trainCorp \
